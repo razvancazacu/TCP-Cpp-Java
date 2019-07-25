@@ -16,10 +16,11 @@
 // #pragma comment (lib, "Mswsock.lib")
 
 #define DEFAULT_BUFLEN 512
-#define DEFAULT_PORT "27015"
+#define DEFAULT_PORT "8888"
 
-int __cdecl main(void)
-{
+using json = nlohmann::json;
+
+int __cdecl main(void) {
 	WSADATA wsaData;
 	int iResult;
 
@@ -88,28 +89,44 @@ int __cdecl main(void)
 	if (ClientSocket == INVALID_SOCKET) {
 		printf("accept failed with error: %d\n", WSAGetLastError());
 		closesocket(ListenSocket);
-		WSACleanup();
+		WSACleanup();	
 		return 1;
 	}
+	std::cout << "Server connected to client on port " << DEFAULT_PORT << '\n';
 
 	// No longer need server socket
-	closesocket(ListenSocket);
+	closesocket(ListenSocket);	
 
 	// Receive until the peer shuts down the connection
 	do {
-
+		//Sleep(1000);
 		iResult = recv(ClientSocket, recvbuf, recvbuflen, 0);
+		//iResult = recv(ClientSocket, recvbuf, recvbuflen, 0);
 		if (iResult > 0) {
 			printf("Bytes received: %d\n", iResult);
-			//recvbuf[iResult] = '\0';
-			//printf("Message: %s\n", recvbuf);
+		/*	recvbuf[iResult] = '\0';
+			printf("Message: %s\n", recvbuf);*/
 
 
 			std::string receivedString(recvbuf, iResult);
+			receivedString.append("\0");
 			std::cout << receivedString << '\n';
 
+			//JSON conversion
+
+		/*	json j_complete = json::parse(receivedString);
+			std::cout << "String to json : \n" << j_complete << "\n\n";*/
+
+
 			// Echo the buffer back to the sender
-			iSendResult = send(ClientSocket, recvbuf, iResult, 0);
+			//std::string s = std::to_string(receivedString.length());
+			receivedString = std::to_string(iResult) + receivedString;
+			char const *pchar = receivedString.c_str();
+			std::cout << pchar <<"  zzz   "<< iResult;
+			
+
+			iSendResult = send(ClientSocket, pchar, iResult+ std::to_string(iResult).length(), 0);
+			
 			if (iSendResult == SOCKET_ERROR) {
 				printf("send failed with error: %d\n", WSAGetLastError());
 				closesocket(ClientSocket);
@@ -117,11 +134,9 @@ int __cdecl main(void)
 				return 1;
 			}
 			printf("Bytes sent: %d\n", iSendResult);
-		}
-		else if (iResult == 0) {
+		} else if (iResult == 0) {
 			printf("Connection closing...\n");
-		}
-		else {
+		} else {
 			printf("recv failed with error: %d\n", WSAGetLastError());
 			closesocket(ClientSocket);
 			WSACleanup();

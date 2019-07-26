@@ -186,6 +186,6 @@ int __cdecl main(void) {
 	closesocket(ClientSocket);
 	WSACleanup();
 
-	system("PAUSE");
+	//system("PAUSE");
 	return 0;
 }

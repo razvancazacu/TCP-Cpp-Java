@@ -1,14 +1,11 @@
 package javatcp.jsoncom;
 
 import java.io.*;
-import java.math.BigInteger;
 import java.net.ConnectException;
 import java.net.NoRouteToHostException;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
-
-import org.json.JSONObject;
 
 import com.google.gson.Gson;
 
@@ -26,16 +23,7 @@ public class ClientTcpJson {
 		System.out.println("Client has been connected..");
 	}
 
-	/**
-	 * use the JSON Protocol to receive a json object as from the client and
-	 * reconstructs that object
-	 *
-	 * @return JSONObejct with the same state (data) as the JSONObject the client
-	 *         sent as a String msg.
-	 * @throws IOException
-	 */
-
-	public JSONObject receiveJSON() throws IOException {
+	public void receiveJSON() throws IOException {
 
 		InputStream in = socket.getInputStream();
 		DataInputStream inputStream = new DataInputStream(in);
@@ -57,43 +45,33 @@ public class ClientTcpJson {
 		String receivedMessageString = new String('{' + new String(receivedMsgBuf));
 		System.out.println("\nReceived message (" + "bytes " + count + "): " + receivedMessageString);
 		System.out.println("Transforming into JSON \n----------------------");
-		JSONObject jsonObject = new JSONObject(receivedMessageString);
-		System.out.println("Got from server on port " + socket.getPort() + " " + jsonObject.toString());
-		System.out.println("Received JSON: " + jsonObject.toString());
 		Paper paperObjPaper = new Paper();
 		Gson gson = new Gson();
-		gson.fromJson(jsonObject.toString(), Paper.class);
+		gson.fromJson(receivedMessageString, Paper.class);
 		System.out.println(paperObjPaper.toString());
-		return jsonObject;
 
 	}
 
-	public void sendJSON(JSONObject jsonObject) throws IOException {
-		JSONObject jsonObject2 = new JSONObject();
-
-		jsonObject2.put("x", 240);
-		jsonObject2.put("y", 233);
+	public void sendJSON() throws IOException {
 		OutputStream out = socket.getOutputStream();
 		DataOutputStream o = new DataOutputStream(out);
 
-		String sendingJson = new String(jsonObject2.toString().length() + jsonObject2.toString());
-		
-		o.write(sendingJson.getBytes());
+		Gson gson = new Gson();
+		String jsonString = gson.toJson(new Paper(340,234));
+//		JsonObject jsonObject3 = gson.fromJson(jsonString, JsonObject.class);
+//		System.out.println(jsonObject3.toString());
+		jsonString = jsonString.length() + jsonString;
+//		o.write(sendingJson.getBytes());
+		o.write(jsonString.getBytes());
 		out.flush();
-		System.out.println("Sent to server: " + " " + jsonObject2.toString());
-		System.out.println("JSON String: " + jsonObject2.toString());
 	}
 
 	public static void main(String[] args) {
 		ClientTcpJson client = new ClientTcpJson();
 		try {
 			client.connect("localhost", 8888);
-			// For JSON call sendJSON(JSON json) & receiveJSON();
-			JSONObject jsonObject2 = new JSONObject();
-			jsonObject2.put("x", 250);
-			jsonObject2.put("y", 353);
 
-			client.sendJSON(jsonObject2);
+			client.sendJSON();
 			client.receiveJSON();
 		} catch (ConnectException e) {
 			System.err.println(client.host + " connect refused");

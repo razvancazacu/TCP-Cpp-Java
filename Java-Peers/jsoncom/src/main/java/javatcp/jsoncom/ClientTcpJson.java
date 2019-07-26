@@ -32,38 +32,31 @@ public class ClientTcpJson {
 	 *         sent as a String msg.
 	 * @throws IOException
 	 */
+
 	public JSONObject receiveJSON() throws IOException {
 		InputStream in = socket.getInputStream();
-//		ObjectInputStream i = new ObjectInputStream(in);
 		DataInputStream inputStream = new DataInputStream(in);
-//		String line = null; 
-//		try {
-//			line = (String) i.readObject();
-		byte[] messageLength = null;
+
 		byte[] readedByte = new byte[1];
-		String stringIntLengthString = new String();
-		char inChar;
-		do {
+		String stringLengthBuilder = new String();
+		char inChar = '1';
+		while (inChar != '{') {
 			inputStream.read(readedByte, 0, 1);
-			stringIntLengthString = stringIntLengthString + new String(readedByte, StandardCharsets.UTF_8);
-			inChar = stringIntLengthString.charAt(stringIntLengthString.length() - 1);
-		} while (inChar != '{');
-		stringIntLengthString = stringIntLengthString.substring(0, stringIntLengthString.length() - 1);
-		int bufferLenght = Integer.parseInt(stringIntLengthString);
-		byte[] bufferedMessage = new byte[bufferLenght - 1];
-		int count = inputStream.read(bufferedMessage);
-		String receivedMessageString = new String('{' + new String(bufferedMessage));
-		System.out.println("|Bytes: " + count + " |Received message: " + receivedMessageString);
-//		} catch (ClassNotFoundException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
+			stringLengthBuilder = stringLengthBuilder + new String(readedByte, StandardCharsets.UTF_8);
+			inChar = stringLengthBuilder.charAt(stringLengthBuilder.length() - 1);
+		}
+		
+		stringLengthBuilder = stringLengthBuilder.substring(0, stringLengthBuilder.length() - 1);
+		int bufferLenght = Integer.parseInt(stringLengthBuilder);
+		byte[] receivedMsgBuf = new byte[bufferLenght - 1];
+		int count = inputStream.read(receivedMsgBuf);
+		String receivedMessageString = new String('{' + new String(receivedMsgBuf));
+		System.out.println("\nReceived message (" + "bytes " + count + "): " + receivedMessageString);
+		
+		System.out.println("Transforming into JSON \n----------------------");
 		JSONObject jsonObject = new JSONObject(receivedMessageString);
 		System.out.println("Got from server on port " + socket.getPort() + " " + jsonObject.get("key").toString());
 		System.out.println("Received JSON: " + jsonObject.toString());
-		/*
-		 * Decoding
-		 */
 
 		return jsonObject;
 
@@ -76,21 +69,7 @@ public class ClientTcpJson {
 		jsonObject2.put("key1", new Paper(256, 333));
 		OutputStream out = socket.getOutputStream();
 		DataOutputStream o = new DataOutputStream(out);
-//		o.writeObject(jsonObject2.toString());
-//		o.writeBytes(jsonObject2.toString());
-//		o.writeChars(jsonObject2.toString());
-//		o.writeUTF(jsonObject2.toString());
-//		o.writeBytes("");
-//		o.writeUTF(jsonObject2.toString());
-//		byte[] byteBuf = {'1','2','3','4'};
-//		o.write(byteBuf);
 		o.write(jsonObject2.toString().getBytes());
-//		try {
-//			Thread.sleep(100000);
-//		} catch (InterruptedException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
 		out.flush();
 
 		Paper paperObjPaper = (Paper) jsonObject.get("key");

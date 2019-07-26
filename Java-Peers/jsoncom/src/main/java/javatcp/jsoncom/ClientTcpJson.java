@@ -10,6 +10,8 @@ import java.nio.charset.StandardCharsets;
 
 import org.json.JSONObject;
 
+import com.google.gson.Gson;
+
 public class ClientTcpJson {
 
 	private String host;
@@ -34,30 +36,34 @@ public class ClientTcpJson {
 	 */
 
 	public JSONObject receiveJSON() throws IOException {
+
 		InputStream in = socket.getInputStream();
 		DataInputStream inputStream = new DataInputStream(in);
 
 		byte[] readedByte = new byte[1];
 		String stringLengthBuilder = new String();
 		char inChar = '1';
-		while (inChar != '{') {
-			inputStream.read(readedByte, 0, 1);
+		int count = 1;
+		while (inChar != '{' && count != 0) {
+			count = inputStream.read(readedByte, 0, 1);
 			stringLengthBuilder = stringLengthBuilder + new String(readedByte, StandardCharsets.UTF_8);
 			inChar = stringLengthBuilder.charAt(stringLengthBuilder.length() - 1);
 		}
-		
+
 		stringLengthBuilder = stringLengthBuilder.substring(0, stringLengthBuilder.length() - 1);
 		int bufferLenght = Integer.parseInt(stringLengthBuilder);
 		byte[] receivedMsgBuf = new byte[bufferLenght - 1];
-		int count = inputStream.read(receivedMsgBuf);
+		count = inputStream.read(receivedMsgBuf) + 1;
 		String receivedMessageString = new String('{' + new String(receivedMsgBuf));
 		System.out.println("\nReceived message (" + "bytes " + count + "): " + receivedMessageString);
-		
 		System.out.println("Transforming into JSON \n----------------------");
 		JSONObject jsonObject = new JSONObject(receivedMessageString);
-		System.out.println("Got from server on port " + socket.getPort() + " " + jsonObject.get("key").toString());
+		System.out.println("Got from server on port " + socket.getPort() + " " + jsonObject.toString());
 		System.out.println("Received JSON: " + jsonObject.toString());
-
+		Paper paperObjPaper = new Paper();
+		Gson gson = new Gson();
+		gson.fromJson(jsonObject.toString(), Paper.class);
+		System.out.println(paperObjPaper.toString());
 		return jsonObject;
 
 	}
@@ -65,17 +71,17 @@ public class ClientTcpJson {
 	public void sendJSON(JSONObject jsonObject) throws IOException {
 		JSONObject jsonObject2 = new JSONObject();
 
-		jsonObject2.put("key", new Paper(250, 333));
-		jsonObject2.put("key1", new Paper(256, 333));
+		jsonObject2.put("x", 240);
+		jsonObject2.put("y", 233);
 		OutputStream out = socket.getOutputStream();
 		DataOutputStream o = new DataOutputStream(out);
-		o.write(jsonObject2.toString().getBytes());
-		out.flush();
 
-		Paper paperObjPaper = (Paper) jsonObject.get("key");
-		System.out.println("Sent to server: " + " " + jsonObject2.get("key").toString());
+		String sendingJson = new String(jsonObject2.toString().length() + jsonObject2.toString());
+		
+		o.write(sendingJson.getBytes());
+		out.flush();
+		System.out.println("Sent to server: " + " " + jsonObject2.toString());
 		System.out.println("JSON String: " + jsonObject2.toString());
-		System.out.println("JSON key Object: " + paperObjPaper.toString());
 	}
 
 	public static void main(String[] args) {
@@ -84,7 +90,8 @@ public class ClientTcpJson {
 			client.connect("localhost", 8888);
 			// For JSON call sendJSON(JSON json) & receiveJSON();
 			JSONObject jsonObject2 = new JSONObject();
-			jsonObject2.put("key", new Paper(250, 333));
+			jsonObject2.put("x", 250);
+			jsonObject2.put("y", 353);
 
 			client.sendJSON(jsonObject2);
 			client.receiveJSON();
